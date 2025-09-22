@@ -203,7 +203,7 @@ mirror_site() {
     local cmd_opts=()
 
     # Basic structure options
-    cmd_opts+=("-N100" "-I0" "-K0")  # No subdirs, no index page, keep relative links
+    cmd_opts+=("-N100" "-I0" "-K0" "-W")  # No subdirs, no index page, keep relative links, no warnings
 
     # Politeness options
     cmd_opts+=("-c$concurrency" "-%c$cps" "-T$timeout" "-R$retries")
@@ -276,6 +276,10 @@ mirror_site() {
     fi
 
     # Execute httrack
+    echo "📥 Fetching: $url"
+    echo "   This may take a while depending on site size..."
+    echo ""
+
     if httrack "$url" -O "$out_dir" "${cmd_opts[@]}" "${scan_rules[@]}"; then
         # Optional cleanup
         if [[ $clean_cache -eq 1 ]]; then
@@ -293,15 +297,41 @@ mirror_site() {
         echo "💉 Injected JS: $out_dir/$inject_js_path"
         echo ""
 
+        # Fix index.html naming issue (HTTrack often creates index-2.html due to redirects)
+        echo "🔧 Fixing index file..."
+        if [[ -f "$out_dir/index.html" ]]; then
+            echo "   ✅ index.html already exists"
+        elif [[ -f "$out_dir/index-2.html" ]]; then
+            cp "$out_dir/index-2.html" "$out_dir/index.html"
+            echo "   ✅ Copied index-2.html to index.html"
+        elif [[ -f "$out_dir/index-1.html" ]]; then
+            cp "$out_dir/index-1.html" "$out_dir/index.html"
+            echo "   ✅ Copied index-1.html to index.html"
+        else
+            # Look for any file that might be the homepage
+            local potential_index
+            potential_index=$(find "$out_dir" -maxdepth 1 -name "index*.html" -type f 2>/dev/null | head -1)
+            if [[ -n "$potential_index" ]]; then
+                cp "$potential_index" "$out_dir/index.html"
+                echo "   ✅ Copied $(basename "$potential_index") to index.html"
+            else
+                echo "   ⚠️  No index file found - you may need to manually identify the homepage"
+            fi
+        fi
+
         # Show some stats
-        local html_count=$(find "$out_dir" -name "*.html" -type f 2>/dev/null | wc -l)
-        local total_files=$(find "$out_dir" -type f 2>/dev/null | wc -l)
+        local html_count
+        local total_files
+        html_count=$(find "$out_dir" -name "*.html" -type f 2>/dev/null | wc -l)
+        total_files=$(find "$out_dir" -type f 2>/dev/null | wc -l)
+        echo ""
         echo "📊 Files mirrored:"
-        echo "   HTML pages: $(printf "%'d" $html_count)"
-        echo "   Total files: $(printf "%'d" $total_files)"
+        echo "   HTML pages: $(printf "%'d" "$html_count")"
+        echo "   Total files: $(printf "%'d" "$total_files")"
 
         if command -v du &> /dev/null; then
-            local size_kb=$(du -sk "$out_dir" 2>/dev/null | cut -f1)
+            local size_kb
+            size_kb=$(du -sk "$out_dir" 2>/dev/null | cut -f1)
             if [[ -n "$size_kb" ]]; then
                 local size_mb=$((size_kb / 1024))
                 echo "   Total size: ${size_mb}MB"
@@ -313,7 +343,49 @@ mirror_site() {
     else
         echo ""
         echo "❌ Mirror failed!"
-        echo "Check the httrack logs in $out_dir for details."
+        echo "============================="
+        echo ""
+        echo "🔍 Diagnostics:"
+
+        # Check if any files were created
+        if [[ -d "$out_dir" ]]; then
+            local file_count
+            file_count=$(find "$out_dir" -type f 2>/dev/null | wc -l)
+            echo "   Files created: $file_count"
+
+            # Show log file if it exists
+            if [[ -f "$out_dir/hts-log.txt" ]]; then
+                echo "   📋 Last few log entries:"
+                tail -10 "$out_dir/hts-log.txt" | sed 's/^/      /'
+            fi
+
+            # Check for robots.txt issues
+            if [[ -f "$out_dir/hts-log.txt" ]] && grep -q "robots.txt" "$out_dir/hts-log.txt"; then
+                echo ""
+                echo "   ⚠️  Robots.txt detected - try --ignore-robots if appropriate"
+            fi
+
+            # Check for redirects
+            if [[ -f "$out_dir/hts-log.txt" ]] && grep -q "moved\|redirect" "$out_dir/hts-log.txt"; then
+                echo "   🔄 Redirects detected - this might affect mirroring"
+            fi
+
+            # Check for 403/404 errors
+            if [[ -f "$out_dir/hts-log.txt" ]] && grep -q "403\|404\|forbidden" "$out_dir/hts-log.txt"; then
+                echo "   🚫 Access denied errors detected"
+            fi
+        else
+            echo "   No output directory created"
+        fi
+
+        echo ""
+        echo "💡 Troubleshooting suggestions:"
+        echo "   1. Try with --verbose to see detailed logs"
+        echo "   2. Check if the site requires JavaScript (not supported by HTTrack)"
+        echo "   3. Try --ignore-robots if the site blocks crawlers"
+        echo "   4. Increase --timeout if the site is slow"
+        echo "   5. Check $out_dir/hts-log.txt for detailed error messages"
+        echo ""
         return 1
     fi
 }
