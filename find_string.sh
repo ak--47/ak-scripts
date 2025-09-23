@@ -40,49 +40,53 @@ find_string() {
     echo "📊 Found $(printf "%'d" $file_count) files to search"
     echo ""
     
-    # Simple search function that writes result and exits on first match
-    search_file() {
-        local file="$1"
-        local search_string="$2"
-        local result_file="$3"
-        
-        echo "🔍 Searching: $(basename "$file")" >&2
-        
-        local line_number=0
-        while IFS= read -r line; do
-            ((line_number++))
-            
-            if [[ "$line" == *"$search_string"* ]]; then
-                # Found it! Write result and signal success
-                {
-                    echo "MATCH_FOUND"
-                    echo "FILE: $file"
-                    echo "LINE: $line_number"
-                    echo "CONTENT: $line"
-                } > "$result_file"
-                
-                echo "🎯 FOUND MATCH in $(basename "$file") at line $line_number!" >&2
-                
-                # Kill all other search processes
-                pkill -f "search_file" 2>/dev/null
-                exit 0
-            fi
-        done < <(gsutil cat "$file" 2>/dev/null)
-        
-        echo "   ❌ No match in $(basename "$file")" >&2
-    }
-    
-    export -f search_file
     
     # Start the search with limited concurrency
     echo "🚀 Starting search..."
     echo ""
     
-    # Use a simple approach: search files in parallel until one finds the match
-    echo "$files" | xargs -I {} -P "$concurrency" bash -c 'search_file() { local file="$1"; local search_string="$2"; local result_file="$3"; echo "🔍 Searching: $(basename "$file")" >&2; local line_number=0; while IFS= read -r line; do ((line_number++)); if [[ "$line" == *"$search_string"* ]]; then { echo "MATCH_FOUND"; echo "FILE: $file"; echo "LINE: $line_number"; echo "CONTENT: $line"; } > "$result_file"; echo "🎯 FOUND MATCH in $(basename "$file") at line $line_number!" >&2; return 0; fi; done < <(gsutil cat "$file" 2>/dev/null); echo "   ❌ No match in $(basename "$file")" >&2; }; search_file "$0" "'"$search_string"'" "'"$result_file"'"' {}
+    # Create a simple worker script
+    local worker_script="$temp_dir/worker.sh"
+    cat > "$worker_script" << 'EOF'
+#!/bin/bash
+search_single_file() {
+    local file="$1"
+    local search_string="$2"
+    local result_file="$3"
+
+    echo "🔍 Searching: $(basename "$file")" >&2
+
+    local line_number=0
+    while IFS= read -r line; do
+        ((line_number++))
+
+        if [[ "$line" == *"$search_string"* ]]; then
+            # Found it! Write result and signal success
+            {
+                echo "MATCH_FOUND"
+                echo "FILE: $file"
+                echo "LINE: $line_number"
+                echo "CONTENT: $line"
+            } > "$result_file"
+
+            echo "🎯 FOUND MATCH in $(basename "$file") at line $line_number!" >&2
+            return 0
+        fi
+    done < <(gsutil cat "$file" 2>/dev/null)
+
+    echo "   ❌ No match in $(basename "$file")" >&2
+}
+
+search_single_file "$1" "$2" "$3"
+EOF
+
+    chmod +x "$worker_script"
+
+    # Use the worker script with xargs
+    echo "$files" | xargs -I {} -P "$concurrency" "$worker_script" {} "$search_string" "$result_file"
     
     # Wait for results with timeout
-    local timeout_seconds=1800  # 30 minute timeout
+    local timeout_seconds=3600  # 60 minute timeout
     local waited=0
     
     while [[ $waited -lt $timeout_seconds ]]; do
