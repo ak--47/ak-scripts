@@ -5,11 +5,6 @@
 # Add this ONE line to your ~/.zshrc:
 # source ~/scripts/autoload_light.zsh
 
-# Set default values for variables that Warp terminal expects
-export POWERLEVEL9K_PROMPT_ADD_NEWLINE=${POWERLEVEL9K_PROMPT_ADD_NEWLINE:-false}
-export INSIDE_EMACS=${INSIDE_EMACS:-""}
-export vi_mode_in_opts=${vi_mode_in_opts:-""}
-
 # Get the scripts directory
 export SCRIPTS_DIR="$HOME/scripts"
 
