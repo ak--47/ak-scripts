@@ -5,8 +5,13 @@
 # Add this ONE line to your ~/.zshrc:
 # source ~/scripts/autoload.zsh
 
+# Set default values for variables that Warp terminal expects
+export POWERLEVEL9K_PROMPT_ADD_NEWLINE=${POWERLEVEL9K_PROMPT_ADD_NEWLINE:-false}
+export INSIDE_EMACS=${INSIDE_EMACS:-""}
+export vi_mode_in_opts=${vi_mode_in_opts:-""}
+
 # Get the scripts directory
-SCRIPTS_DIR="$HOME/scripts"
+export SCRIPTS_DIR="$HOME/scripts"
 
 # Check if scripts directory exists
 if [[ ! -d "$SCRIPTS_DIR" ]]; then
@@ -15,21 +20,27 @@ if [[ ! -d "$SCRIPTS_DIR" ]]; then
 fi
 
 # Counter for loaded scripts
-local loaded_count=0
+loaded_count=0
 
 # Auto-load all .sh files in ~/scripts/
 for script_file in "$SCRIPTS_DIR"/*.sh; do
     # Skip if no .sh files found (glob doesn't match)
     [[ -f "$script_file" ]] || continue
-    
+
     # Get the base filename without path and extension
-    local script_name=$(basename "$script_file" .sh)
+    script_name=$(basename "$script_file" .sh)
     
     # Try to source the script to load its functions
     if bash -c "source '$script_file'; typeset -f '$script_name'" >/dev/null 2>&1; then
         # Script has a function with matching name, source it in zsh
-        source "$script_file" 2>/dev/null && ((loaded_count++))
-        
+        if source "$script_file" 2>/dev/null; then
+            ((loaded_count++))
+        else
+            # Failed to source, create alias
+            alias "$script_name"="bash $script_file"
+            ((loaded_count++))
+        fi
+
         # Create an alias that calls the main function
         if typeset -f "$script_name" >/dev/null 2>&1; then
             alias "$script_name"="$script_name"
@@ -53,7 +64,7 @@ list_scripts() {
     echo "=================================="
     echo ""
     
-    for script_file in "$SCRIPTS_DIR"/*.sh; do
+    for script_file in "/Users/ak/scripts"/*.sh; do
         [[ -f "$script_file" ]] || continue
         local script_name=$(basename "$script_file" .sh)
         local file_size=$(ls -lh "$script_file" | awk '{print $5}')
@@ -75,7 +86,7 @@ reload_scripts() {
     echo "🔄 Reloading scripts from ~/scripts/..."
     
     # Clear existing aliases for script names
-    for script_file in "$SCRIPTS_DIR"/*.sh; do
+    for script_file in "/Users/ak/scripts"/*.sh; do
         [[ -f "$script_file" ]] || continue
         local script_name=$(basename "$script_file" .sh)
         unalias "$script_name" 2>/dev/null

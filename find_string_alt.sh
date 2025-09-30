@@ -255,7 +255,7 @@ search_file() {
 }
 
 # Main function
-find_string() {
+find_string_alt() {
     # Show help
     if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
         cat <<EOF
@@ -527,9 +527,9 @@ EOF
 }
 
 # Export main function
-export -f find_string
+export -f find_string_alt
 
 # Run if executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    find_string "$@"
+    find_string_alt "$@"
 fi
