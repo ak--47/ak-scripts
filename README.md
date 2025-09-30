@@ -4,17 +4,25 @@ A collection of bash scripts for cloud storage operations with concurrent proces
 
 ## Quick Setup
 
-Add this line to your `~/.zshrc` to auto-load all scripts:
+### For Zsh (default on macOS)
+
+Add this line to your `~/.zshrc`:
 
 ```bash
-# Auto-load all scripts from ~/scripts/
 source ~/scripts/autoload.zsh
 ```
 
-After adding the line, reload your shell:
+Then reload: `source ~/.zshrc`
+
+### For Bash (Linux/other terminals)
+
+Add this line to your `~/.bashrc`:
+
 ```bash
-source ~/.zshrc
+source ~/scripts/autoload.bash
 ```
+
+Then reload: `source ~/.bashrc`
 
 ## Available Commands
 
