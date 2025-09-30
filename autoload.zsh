@@ -10,8 +10,8 @@ export POWERLEVEL9K_PROMPT_ADD_NEWLINE=${POWERLEVEL9K_PROMPT_ADD_NEWLINE:-false}
 export INSIDE_EMACS=${INSIDE_EMACS:-""}
 export vi_mode_in_opts=${vi_mode_in_opts:-""}
 
-# Get the scripts directory
-export SCRIPTS_DIR="$HOME/scripts"
+# Get the scripts directory (use SCRIPTS_DIR env var if set, otherwise default to ~/scripts)
+export SCRIPTS_DIR="${SCRIPTS_DIR:-$HOME/scripts}"
 
 # Check if scripts directory exists
 if [[ ! -d "$SCRIPTS_DIR" ]]; then

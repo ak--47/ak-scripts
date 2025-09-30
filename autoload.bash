@@ -5,8 +5,8 @@
 # Add this ONE line to your ~/.bashrc:
 # source ~/scripts/autoload.bash
 
-# Get the scripts directory
-export SCRIPTS_DIR="$HOME/scripts"
+# Get the scripts directory (use SCRIPTS_DIR env var if set, otherwise default to ~/scripts)
+export SCRIPTS_DIR="${SCRIPTS_DIR:-$HOME/scripts}"
 
 # Check if scripts directory exists
 if [[ ! -d "$SCRIPTS_DIR" ]]; then

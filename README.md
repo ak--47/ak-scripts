@@ -6,23 +6,27 @@ A collection of bash scripts for cloud storage operations with concurrent proces
 
 ### For Zsh (default on macOS)
 
-Add this line to your `~/.zshrc`:
+Add these lines to your `~/.zshrc`:
 
 ```bash
-source ~/scripts/autoload.zsh
+export SCRIPTS_DIR="$HOME/ak-scripts"  # Optional: customize location (defaults to ~/scripts)
+source ~/ak-scripts/autoload.zsh
 ```
 
 Then reload: `source ~/.zshrc`
 
 ### For Bash (Linux/other terminals)
 
-Add this line to your `~/.bashrc`:
+Add these lines to your `~/.bashrc`:
 
 ```bash
-source ~/scripts/autoload.bash
+export SCRIPTS_DIR="$HOME/ak-scripts"  # Optional: customize location (defaults to ~/scripts)
+source ~/ak-scripts/autoload.bash
 ```
 
 Then reload: `source ~/.bashrc`
+
+**Note:** If your scripts are in `~/scripts`, you don't need to set `SCRIPTS_DIR`.
 
 ## Available Commands
 
