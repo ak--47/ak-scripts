@@ -137,6 +137,8 @@ size_single_bucket() {
         # Calculate grand total
         local total_bytes=0
         while IFS=$'\t' read -r bytes item size_display; do
+            # Convert to integer if needed (bc may return decimal)
+            bytes=$(printf "%.0f" "$bytes" 2>/dev/null || echo "0")
             total_bytes=$((total_bytes + bytes))
         done < "$temp_file"
 
