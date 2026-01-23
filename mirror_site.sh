@@ -488,6 +488,6 @@ EOF
 export -f mirror_site
 
 # Run if executed directly
-if [[ "${(%):-%x}" == "${0}" ]]; then
+if [[ "${(%):-%N}" == "${0}" ]]; then
     mirror_site "$@"
 fi
